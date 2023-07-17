@@ -2,14 +2,15 @@ import { Request, Response, NextFunction } from "express";
 import userModel from "../models/user.model";
 import { sendResponse } from "../utils/responseHandler";
 import APIError from "../utils/apiError";
-import { validateUser } from "../utils/validation";
+import { validateUser } from "../middlewares/validation/validation";
 import UserServices from "../services/user.services";
 import bcrypt from "bcryptjs";
-import { CustomRequest } from "../utils/jwt.utils";
+import { CustomRequest } from "../middlewares/authorization/jwt.utils";
 import dotenv from "dotenv";
 dotenv.config()
 import jwt from "jsonwebtoken"
 const userServices = new UserServices(userModel);
+//for JWT token
 const SECRET_KEY = process.env.SECRET_KEY
 
 export const create = async (
@@ -22,7 +23,6 @@ export const create = async (
     // Joi validation
     const { error } = validateUser(req.body);
     if (error) throw new APIError(error.toString(), 409);
-    // sendResponse(res, error.toString(), null, 400); >>>>>
     // check if email is already exists
     const existsUser = await userModel.find({ email: email });
     if (existsUser.length > 0) throw new APIError("User already exists", 400);
@@ -95,8 +95,8 @@ export const deleteUser = async (
   try {
     const { id } = req.params;
     // Access the properties of the decoded token
-    // const decoded = req.token;
-    // if(id !== decoded._id) throw new APIError("can't change other users data", 409);
+    const decoded = req.token;
+    if(id !== decoded._id) throw new APIError("can't change other users data", 409);
     const result = await userServices.delete(id);
     sendResponse(
       res,

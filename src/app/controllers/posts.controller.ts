@@ -1,12 +1,13 @@
 import { Request, Response, NextFunction } from "express";
 import postModel from "../models/post.model";
-import { CustomRequest } from "../utils/jwt.utils";
+import { CustomRequest } from "../middlewares/authorization/jwt.utils";
 import { sendResponse } from "../utils/responseHandler";
 import APIError from "../utils/apiError";
 interface post {
     author : any;
     title : string;
     body : string;
+    image ?: string;
 }
 
 // Create post

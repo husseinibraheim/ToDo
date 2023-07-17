@@ -1,6 +1,6 @@
 import jwt, { Secret, JwtPayload } from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
-import APIError from './apiError';
+import APIError from '../../utils/apiError';
 import dotenv from "dotenv";
 dotenv.config()
 //import secrete key from .env
