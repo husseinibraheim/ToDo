@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import userModel from "../models/user.model";
+import { ModelHelpers } from "../utils/modelHelpers";
 import { sendResponse } from "../utils/responseHandler";
 import APIError from "../utils/apiError";
 import { validateUser } from "../middlewares/validation/validation";
@@ -7,12 +8,14 @@ import UserServices from "../services/user.services";
 import bcrypt from "bcryptjs";
 import { CustomRequest } from "../middlewares/authorization/jwt.utils";
 import dotenv from "dotenv";
-dotenv.config()
-import jwt from "jsonwebtoken"
+dotenv.config();
+import jwt from "jsonwebtoken";
 const userServices = new UserServices(userModel);
 //for JWT token
-const SECRET_KEY = process.env.SECRET_KEY
-
+const SECRET_KEY = process.env.SECRET_KEY;
+interface SortOptions {
+  [key: string]: number;
+}
 export const create = async (
   req: Request,
   res: Response,
@@ -42,8 +45,25 @@ export const getAll = async (
   next: NextFunction
 ) => {
   try {
-    const users = await userServices.findAll();
-    sendResponse(res, "Users retrieved successfully", users, 200);
+    let { page = 1, limit = 10, sortBy, sortValue } = req.query;
+    const paginatedAndSortedUsers = await userServices.findAll(
+      undefined,
+      {
+        currentPage: Number(page),
+        perPage: Number(limit),
+      },
+      {
+        sortBy: sortBy as string,
+        sortValue: Number(sortValue) as 1 | -1,
+      }
+    );
+    res.status(200).json({
+      message: "users retrieved successfully",
+      users: paginatedAndSortedUsers.data,
+      page: Number(page),
+      totalItems: paginatedAndSortedUsers.totalItems,
+      totalPages: paginatedAndSortedUsers.totalPages,
+    });
   } catch (err) {
     next(new APIError(err.message, err.status));
   }
@@ -64,21 +84,21 @@ export const getOne = async (
 };
 
 export const updateUser = async (
-  req: CustomRequest ,
+  req: CustomRequest,
   res: Response,
-  next: NextFunction,
-
+  next: NextFunction
 ) => {
   try {
     const { id } = req.params;
     const data = req.body;
-       // Access the properties of the decoded token
+    // Access the properties of the decoded token
     const decoded = req.token;
-    if(id !== decoded._id) throw new APIError("can't change other users data", 409);
+    if (id !== decoded._id)
+      throw new APIError("can't change other users data", 409);
     // check if user wanted to change email to an exists email
-    const existsUser = await userServices.findAll({ email: data.email });
-    if (existsUser.length > 0)
-      throw new APIError("this email is already exist", 409);
+    // const existsUser = await userServices.findAll({ email: data.email });
+    // if (existsUser.length > 0)
+    // throw new APIError("this email is already exist", 409);
     // update user data
     const updatedUser = await userServices.update(id, data);
     sendResponse(res, "User updated successfully", updatedUser, 200);
@@ -96,7 +116,8 @@ export const deleteUser = async (
     const { id } = req.params;
     // Access the properties of the decoded token
     const decoded = req.token;
-    if(id !== decoded._id) throw new APIError("can't change other users data", 409);
+    if (id !== decoded._id)
+      throw new APIError("can't change other users data", 409);
     const result = await userServices.delete(id);
     sendResponse(
       res,
@@ -117,16 +138,26 @@ export const login = async (
   try {
     const { email, password } = req.body;
     //find user by email
-    const user = await userModel.findOne({ email});
+    const user = await userModel.findOne({ email });
     if (!user) throw new APIError("Wrong email ", 401);
     //check if password === hashed password
-    const passMatched = await bcrypt.compare(password , user.password)
-    if(!passMatched) throw new APIError('wrong password' , 404)
-    //generate token 
-    const token = jwt.sign({ _id: user._id?.toString(), name: user.firstName }, SECRET_KEY, {
-      expiresIn: '2 days',
-    });
-    sendResponse(res,`Welcome ${user.firstName}, you logged in successfully`,user,200 , token);
+    const passMatched = await bcrypt.compare(password, user.password);
+    if (!passMatched) throw new APIError("wrong password", 404);
+    //generate token
+    const token = jwt.sign(
+      { _id: user._id?.toString(), name: user.firstName },
+      SECRET_KEY,
+      {
+        expiresIn: "2 days",
+      }
+    );
+    sendResponse(
+      res,
+      `Welcome ${user.firstName}, you logged in successfully`,
+      user,
+      200,
+      token
+    );
   } catch (err) {
     next(new APIError(err.message, err.status));
   }

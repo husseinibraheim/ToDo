@@ -18,12 +18,15 @@ interface post {
 
 // Create post
 router.post('/',auth,postsController.create);
+//get all posts 
+
+router.get("/posts",postsController.getAllPosts)
 
 //get all posts for specific user
-router.get("/",auth,postsController.getAllPosts)
+router.get("/",auth,postsController.getPosts)
 
 //get single post
-router.get("/:id",postsController.getOnePost)
+router.get("/:id",postsController.getPost)
 
 //update post 
 router.patch("/:id",auth, postsController.updatePost)
@@ -52,6 +55,21 @@ router.post("/image",auth,upload.single("image") , async (req:CustomRequest , re
     }
 } )
 
+
+// //get post with image 
+// router.get('/testimage/:id',async(req:Request, res:Response,next:NextFunction)=>{
+// try{
+//     const postID = req.params.id
+//     const post = await postModel.findById({postID});
+//     console.log(post);  
+//     if(!post) throw new APIError("post not found",409)
+//     const imagePreview = path.join(__dirname, '../../../dist/upload/', post.image);
+//     sendResponse(res, 'Post Created', post, 201 , imagePreview);
+// }catch(err){
+//     next(new APIError(err.message,err.statusCode));
+// }
+
+// })
 
 //get single image 
 router.get("/image/:filename", (req:Request , res:Response)=>{

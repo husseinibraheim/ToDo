@@ -28,8 +28,18 @@ export const create =async (req : CustomRequest,res:Response , next:NextFunction
     }
 }
 
-//get all posts for specific user
+//get all posts 
 export const getAllPosts =async(req : CustomRequest,res:Response , next:NextFunction)=>{
+    try{
+        const posts = await postModel.find()
+        if(posts.length === 0) throw new APIError("there aren't any posts" , 409)
+        sendResponse(res, 'Posts retrieved successfully', posts, 201)
+    }catch(err){
+    next(new APIError(err.message, err.status));
+    }
+}
+//get all posts for specific user
+export const getPosts =async(req : CustomRequest,res:Response , next:NextFunction)=>{
     try{
         const author = req.token._id;
         const posts = await postModel.find({author: author})
@@ -41,7 +51,7 @@ export const getAllPosts =async(req : CustomRequest,res:Response , next:NextFunc
 }
 
 //get single post by post_ID
-export const getOnePost = async(req:CustomRequest, res:Response)=>{
+export const getPost = async(req:CustomRequest, res:Response)=>{
     const postId = req.params.id
     const post = await postModel.findOne({_id:postId})
     if(!post) throw new APIError("post not found", 404)
